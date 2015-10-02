@@ -1,0 +1,21 @@
+notparticipating 011      001           000
+bitmast          100      010           001
+curdim           0        1             2
+
+Ranks:
+000            send 000   send 010      send 001
+001                                     rec 000
+010                       rec  000      send 011
+011                                     rec 010
+100            rec 100    send 110      send 101
+101                                     rec 100
+110                       rec 100       send 111
+111                                     rec 110
+
+
+xor
+in1 in2 out
+0 0 0
+1 0 1
+0 1 1
+1 1 0

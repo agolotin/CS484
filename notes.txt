@@ -1,0 +1,4 @@
+Think about parallezation strategies
+Try different scheduling strategies
+#pragma omp parallel trivate(tid)
+gcc -fopenmp
