@@ -118,8 +118,12 @@ int main(int argc, char *argv[])
 	gethostname(host,253);
 
     int nproc, iproc;
-    MPI_Status status;
-	MPI_Request request;
+    MPI_Status status1;
+    MPI_Status status2;
+	MPI_Request request1;
+	MPI_Request request2;
+	MPI_Request request3;
+	MPI_Request request4;
 
     MPI_Comm_size(MPI_COMM_WORLD, &nproc);
     MPI_Comm_rank(MPI_COMM_WORLD, &iproc);
@@ -147,12 +151,12 @@ int main(int argc, char *argv[])
 
 	/* First we need to get the 0th row of locked cells from my previous neighbor */
 	if (iproc != 0) {
-		MPI_Isend(locked_cells[1], SIZE, MPI_FLOAT, iproc - 1, 0, MPI_COMM_WORLD, &request);
-		MPI_Recv(locked_cells[0], SIZE, MPI_FLOAT, iproc - 1, 0, MPI_COMM_WORLD, &status);
+		MPI_Isend(locked_cells[1], SIZE, MPI_FLOAT, iproc - 1, 0, MPI_COMM_WORLD, &request1);
+		MPI_Recv(locked_cells[0], SIZE, MPI_FLOAT, iproc - 1, 0, MPI_COMM_WORLD, &status1);
 	}
 	if (iproc != (nproc - 1)) {
-		MPI_Isend(locked_cells[rows_assinged], SIZE, MPI_FLOAT, iproc + 1, 0, MPI_COMM_WORLD, &request);
-		MPI_Recv(locked_cells[rows_assinged + 1], SIZE, MPI_FLOAT, iproc + 1, 0, MPI_COMM_WORLD, &status);
+		MPI_Isend(locked_cells[rows_assinged], SIZE, MPI_FLOAT, iproc + 1, 0, MPI_COMM_WORLD, &request1);
+		MPI_Recv(locked_cells[rows_assinged + 1], SIZE, MPI_FLOAT, iproc + 1, 0, MPI_COMM_WORLD, &status1);
 	}
 
     /* Now run the relaxation */
@@ -166,20 +170,35 @@ int main(int argc, char *argv[])
         if (iproc != 0) 
         {
 			/* If I'm not the first processor I want to send/receive to my previous neighbour */
-            MPI_Isend(prev_plate[1], SIZE, MPI_FLOAT, iproc - 1, 0, MPI_COMM_WORLD, &request);
-            MPI_Recv(prev_plate[0], SIZE, MPI_FLOAT, iproc - 1, 0, MPI_COMM_WORLD, &status);
+            MPI_Isend(prev_plate[1], SIZE, MPI_FLOAT, iproc - 1, 0, MPI_COMM_WORLD, &request1);
+            MPI_Irecv(prev_plate[0], SIZE, MPI_FLOAT, iproc - 1, 0, MPI_COMM_WORLD, &request2);
+			start++;
         }
         if (iproc != nproc - 1) 
         {
 			/* If I'm not the last processor I want to send/receice from my next neighbor */
-            MPI_Isend(prev_plate[rows_assinged], SIZE, MPI_FLOAT, iproc + 1, 0, MPI_COMM_WORLD, &request);
-            MPI_Recv(prev_plate[rows_assinged + 1], SIZE, MPI_FLOAT, iproc + 1, 0, MPI_COMM_WORLD, &status);
+            MPI_Isend(prev_plate[rows_assinged], SIZE, MPI_FLOAT, iproc + 1, 0, MPI_COMM_WORLD, &request3);
+            MPI_Irecv(prev_plate[rows_assinged + 1], SIZE, MPI_FLOAT, iproc + 1, 0, MPI_COMM_WORLD, &request4);
+			end--;
         }
-        /* Do the calculations */
 		update_plate(iproc, plate, prev_plate, locked_cells, rows_assinged, start, end);
-        /* Check to see if we are done */
+
+		if (iproc != 0) {
+			int temp_end = start;
+			int temp_start = start - 1;
+			MPI_Wait(&request2, &status1);
+			update_plate(iproc, plate, prev_plate, locked_cells, rows_assinged, temp_start, temp_end);
+			start--;
+		}
+		if (iproc != nproc - 1) {
+			int temp_start = end;
+			int temp_end = end + 1;
+			MPI_Wait(&request4, &status2);
+			update_plate(iproc, plate, prev_plate, locked_cells, rows_assinged, temp_start, temp_end);
+			end++;
+		}
+
 		done = steady(iproc, plate, locked_cells, rows_assinged, start, end);
-        /* Do a reduce and distribute it to all processors */
         MPI_Allreduce(&done, &reallydone, 1, MPI_INT, MPI_MIN, MPI_COMM_WORLD);
 
         /* Swap the pointers */
