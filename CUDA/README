@@ -1,0 +1,29 @@
+Credit:
+Mark Ebersole - NVIDIA Corporation
+
+Description:
+A very simple Hello World designed to help demonstrate the high parallelism
+available in a modern GPU.
+
+Files:
+  Exercise:
+    hello.cu - the Hello World example
+
+Compile:
+Requires a GPU with SM2.0 or greater
+Using the NVIDIA C Compiler
+  nvcc  -arch=sm_20 -o hello hello.cu
+
+Flow:
+1. Compile and run the code. If using a Fermi-class GPU, you should see 
+"HELLO WORLD!" printed out with one character per-line, no randomization.
+2. Now increase the number of blocks to 2. Ask what the students expect to see.
+On a Fermi-class GPU, you will start to see randomization of the letters based
+on how the printf mechanism works. At this point describe how many threads are
+operating at the exact same time to print these letters out, and how they are
+displayed is simply a race condition.
+3. If a hands-on lab, let the students play with the number of threads and
+blocks.
+
+References:
+None
