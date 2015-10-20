@@ -1,0 +1,2 @@
+# Hot Plate Pthreads
+There are several workign versions of the program, the only difference is in the syncronization barriers used. hot_plate_barrires.c uses only pthread_barrier_wait() call to syncronize threads. hot_plate_log.c and hot_plate_linear.c use custom defined log barrier and linear barrier respectively for thread syncronization. hot_plate_busy_barrier.c uses a custom defined function that just spins on a while loop to syncronize threads. 
