@@ -1,0 +1,25 @@
+0,1,2,3
+nBlocks 3, blocksize 4
+blockIdx 0, blockDim 4, ThreadIdx 0
+blockIdx 0, blockDim 4, ThreadIdx 1
+blockIdx 0, blockDim 4, ThreadIdx 2
+blockIdx 0, blockDim 4, ThreadIdx 3
+blockIdx 1, blockDim 4, ThreadIdx 0
+blockIdx 1, blockDim 4, ThreadIdx 1
+blockIdx 1, blockDim 4, ThreadIdx 2
+blockIdx 1, blockDim 4, ThreadIdx 3
+blockIdx 2, blockDim 4, ThreadIdx 0
+blockIdx 2, blockDim 4, ThreadIdx 1
+blockIdx 2, blockDim 4, ThreadIdx 2
+blockIdx 2, blockDim 4, ThreadIdx 3
+Checking Results
+a_h[0]=1.000000, b_h[0]=0.000000
+a_h[1]=2.000000, b_h[1]=1.000000
+a_h[2]=3.000000, b_h[2]=2.000000
+a_h[3]=4.000000, b_h[3]=3.000000
+a_h[4]=5.000000, b_h[4]=0.000000
+a_h[5]=6.000000, b_h[5]=1.000000
+a_h[6]=7.000000, b_h[6]=2.000000
+a_h[7]=8.000000, b_h[7]=3.000000
+a_h[8]=9.000000, b_h[8]=0.000000
+a_h[9]=10.000000, b_h[9]=1.000000

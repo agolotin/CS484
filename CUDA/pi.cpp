@@ -7,6 +7,8 @@
 #define STEPS      2000
 #define PI25DT      3.141592653598793238462643
 
+__global__ void pithread()
+
 void pi_calc(int intervals){
   int  i;
   double sum, pi;
