@@ -12,7 +12,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <curses.h>
 #include <math.h>
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -32,24 +31,14 @@ class State {
         int w;
         int h;
         State() {
-            centerX = -1.186340599860225;
-            centerY = -0.303652988644423;
-            zoom = 400;
+            centerX = -.75;
+            centerY = 0;
+            //centerX = -1.186340599860225;
+            //centerY = -0.303652988644423;
+            zoom = 10000;
             maxIterations = 100;
             w = 700;
             h = 700;
-        }
-        void moveY(int change) {
-            centerY += change / zoom;
-        }
-        void moveX(int change) {
-            centerX += change / zoom;
-        }
-        void zoomBy(double r) {
-            zoom *= r;
-        }
-        void addIterations(int i) {
-            maxIterations += i;
         }
 };
 
@@ -161,30 +150,4 @@ void draw(State state) {
 int main() {
     State state;
     draw(state);
-    int ch = 0;
-    initscr(); //curses
-    timeout(25); //curses ?
-    while (ch != 111) { //o
-        ch = getchar(); //curses
-        if (ch != ERR && ch != -1) {
-            if (ch == 101) {} //e
-            else if (ch == 97)  state.moveX(-100); //a
-            else if (ch == 100) state.moveX(100); //d
-            else if (ch == 115) state.moveY(100); //s
-            else if (ch == 119) state.moveY(-100); //w
-            else if (ch == 114) state.zoomBy(2); //r
-            else if (ch == 102) state.zoomBy(0.5); //f
-            else if (ch == 116) state.addIterations(10); //t
-            else if (ch == 103) state.addIterations(-10); //g
-            // else printf("%i,", ch);
-            if (DRAW_ON_KEY || ch == 101) draw(state); //e
-        }
-    }
-    endwin(); //curses
 }
-
-
-
-
-
-

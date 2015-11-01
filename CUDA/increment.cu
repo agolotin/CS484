@@ -14,7 +14,7 @@ __global__ void incrementArrayOnDevice(float *a, int N)
 }
 __global__ void idOnDevice(float *a, int N)
 {
-  int idx = blockIdx.x*blockDim.x + threadIdx.x;
+  int idx = blockIdx.x*blockDim.x + threadIdx.x; //what is a block(blockIdx)? Is thread inside of a block? What does the blockDim tell us?
   printf("blockIdx %d, blockDim %d, ThreadIdx %d\n",blockIdx.x,blockDim.x,threadIdx.x);
   if (idx<N) a[idx] = threadIdx.x;
 }
@@ -39,7 +39,7 @@ int main(void)
   // Part 1 of 2. Compute execution configuration
   int blockSize = 4;
   int nBlocks = N/blockSize + (N%blockSize == 0?0:1);
-  fprintf(stderr,"nBlocks %d, blocksize $d\n",nBlocks,blockSize);
+  fprintf(stderr,"nBlocks %d, blocksize %d\n",nBlocks,blockSize);
   // Part 2 of 2. Call incrementArrayOnDevice kernel 
   //incrementArrayOnDevice <<< nBlocks, blockSize >>> (a_d, N);
   idOnDevice <<< nBlocks, blockSize >>> (a_d, N);
