@@ -14,7 +14,7 @@
 #define TRUE 1
 #define FALSE 0
 #define SIZE 28000
-#define _step 100
+#define _step 50
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -275,7 +275,7 @@ unsigned char *masterCreateImage(struct State* state) {
 	long long size = (long long)state->w*(long long)state->h*3;
     img = (unsigned char *)malloc(size);
 
-	int i, j, k, terminatedIndex = 0;
+	int i, j, k;
 	int* bins = makeBins();
 	int message_count = 0;
 
@@ -295,22 +295,12 @@ unsigned char *masterCreateImage(struct State* state) {
 	}
 
 	struct Locations* loc = (struct Locations*)malloc(sizeof(struct Locations) * info->bin_size * info->bin_size);
-	int* terminated = (int*)malloc(sizeof(int)*nproc);
 	for (;;) {
 		MPI_Status status;
 
 //		printf("[master] Waiting for incoming messages with data\n");
 		MPI_Recv(loc, info->bin_size * info->bin_size, MPI_Location_type, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &status);
 		message_count--;
-
-//		printf("[master] Received from %d recently calculated image pixels. Message count is %d\n", 
-//				status.MPI_SOURCE, message_count);
-		int r;
-		for (r = 0; r < info->bin_size*info->bin_size; r++) {
-			img[loc[r].location+2] = loc[r].r;
-			img[loc[r].location+1] = loc[r].g;
-			img[loc[r].location+0] = loc[r].b;
-		}
 
 		if (k < _step+1) {
 			//Send out more work
@@ -329,10 +319,18 @@ unsigned char *masterCreateImage(struct State* state) {
 //			printf("[master] Sending initial termination message to %d, k=%d\n", status.MPI_SOURCE, k);
 			//Send termination message
 			info->terminate = TRUE;
-			terminated[terminatedIndex] = status.MPI_SOURCE;
-			terminatedIndex++;
 			MPI_Isend(info, 1, MPI_Info_type, status.MPI_SOURCE, 0, MPI_COMM_WORLD, &request);
 		}
+
+//		printf("[master] Received from %d recently calculated image pixels. Message count is %d\n", 
+//				status.MPI_SOURCE, message_count);
+		int r;
+		for (r = 0; r < info->bin_size*info->bin_size; r++) {
+			img[loc[r].location+2] = loc[r].r;
+			img[loc[r].location+1] = loc[r].g;
+			img[loc[r].location+0] = loc[r].b;
+		}
+
 
 		if (k >= _step+1 && message_count == 0) break; //termination should occur
 		k++;
@@ -343,7 +341,6 @@ unsigned char *masterCreateImage(struct State* state) {
 	free(loc);
 	free(bins);
 	free(info);
-	free(terminated);
 
     return img;
 }
@@ -362,7 +359,7 @@ int hue2rgb(float t){
 
 void draw(struct State* state) {
     unsigned char *img = masterCreateImage(state);
-//    writeImage(img, state->w, state->h);
+//	writeImage(img, state->w, state->h);
 	free(img);
 }
 
