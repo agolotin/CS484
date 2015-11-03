@@ -31,13 +31,11 @@ void reduce(vector* in, int numdim)
 		if ((rank & notparticipating) == 0) {
 			if ((rank & bitmask) != 0) {
 				int msg_dest = rank ^ bitmask;
-//				printf("REDUCE. Sending message from machine ranked %d to %d\n", rank, msg_dest);
 				MPI_Send(in, VECSIZE, MPI_DOUBLE_INT, msg_dest, 0, MPI_COMM_WORLD); 
 			} 
 			else {
 				vector* temp = (vector*)malloc(sizeof(vector) * VECSIZE);
 				int msg_src = rank ^ bitmask;
-//				printf("REDUCE. Receiving on machine ranked %d from %d\n", rank, msg_src);
 				MPI_Recv(temp, VECSIZE, MPI_DOUBLE_INT, msg_src, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE); 
 				//receive the whole vector here and in place change in vector values to max
 				int i;
