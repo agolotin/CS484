@@ -208,24 +208,22 @@ int* makeBins() {
 
 void worker(struct State* state) {
     int nproc, iproc;
+	MPI_Request request;
 	int bin_size = SIZE / _step;
 
-	MPI_Request request;
     MPI_Comm_size(MPI_COMM_WORLD, &nproc);
     MPI_Comm_rank(MPI_COMM_WORLD, &iproc);
-
-//	printf("[worker %d] Waiting for workload to come\n", iproc);
+	printf("[worker %d] Waiting for workload to come\n", iproc);
 	struct Info* info = (struct Info*)malloc(sizeof(struct Info));
 	struct Locations* loc = (struct Locations*)malloc(sizeof(struct Locations) * bin_size * bin_size);
 
 	for (;;) {
-
 		MPI_Recv(info, 1, MPI_Info_type, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 		if (info->terminate) break;
 
 		int start = info->start;
 		int end = info->end;
-//		printf("[worker %d] Received pixels from %d to %d\n", iproc, info->start, info->end);
+		printf("[worker %d] Received pixels from %d to %d\n", iproc, info->start, info->end);
 
 		int px, py, q = 0;
 		double xs[MAX_WIDTH_HEIGHT], ys[MAX_WIDTH_HEIGHT];
@@ -256,7 +254,7 @@ void worker(struct State* state) {
 				q++;
 			}
 		}
-//		printf("[worker %d] Sending processed image pixels back to the master\n", iproc);
+		printf("[worker %d] Sending processed image pixels back to the master\n", iproc);
 		MPI_Isend(loc, info->bin_size * info->bin_size, MPI_Location_type, 0, 0, MPI_COMM_WORLD, &request);
 	}
 
@@ -278,11 +276,11 @@ unsigned char *masterCreateImage(struct State* state) {
 	long long size = (long long)state->w*(long long)state->h*3;
     img = (unsigned char *)malloc(size);
 
-	int i, j, k;
+	int i, j, k, terminatedIndex = 0;
 	int* bins = makeBins();
 	int message_count = 0;
 
-//	printf("[master] About to send the initial workload to every processor\n");
+	printf("[master] About to send the initial workload to every processor\n");
 	struct Info* info = (struct Info*)malloc(sizeof(struct Info));
 	info->bin_size = SIZE / _step;
 
@@ -292,21 +290,22 @@ unsigned char *masterCreateImage(struct State* state) {
 		info->start = bins[i];
 		info->end = bins[j];
 		info->terminate = FALSE;
-//		printf("[master] Sending initial workload, rows from %d to %d to worker %d\n", info->start, info->end, k);
+		printf("[master] Sending initial workload, rows from %d to %d to worker %d\n", info->start, info->end, k);
 		MPI_Isend(info, 1, MPI_Info_type, k, 0, MPI_COMM_WORLD, &request);
 		message_count++;
 	}
 
 	struct Locations* loc = (struct Locations*)malloc(sizeof(struct Locations) * info->bin_size * info->bin_size);
+	int* terminated = (int*)malloc(sizeof(int)*nproc);
 	for (;;) {
 		MPI_Status status;
 
-//		printf("[master] Waiting for incoming messages with data\n");
+		printf("[master] Waiting for incoming messages with data\n");
 		MPI_Recv(loc, info->bin_size * info->bin_size, MPI_Location_type, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, &status);
 		message_count--;
 
-//		printf("[master] Received from process %d recently calculated image pixels. Message count is %d\n", 
-//				status.MPI_SOURCE, message_count);
+		printf("[master] Received from %d recently calculated image pixels. Message count is %d\n", 
+				status.MPI_SOURCE, message_count);
 		int r;
 		for (r = 0; r < info->bin_size*info->bin_size; r++) {
 			img[loc[r].location+2] = loc[r].r;
@@ -319,8 +318,8 @@ unsigned char *masterCreateImage(struct State* state) {
 			info->start = bins[i];
 			info->end = bins[j];
 			info->terminate = FALSE;
-//			printf("[master] Sending more work to process %d, start=%d, end=%d\n", 
-//					status.MPI_SOURCE, info->start, info->end);
+			printf("[master] Sending more work to %d, start=%d, end=%d, i=%d, j=%d\n", 
+					status.MPI_SOURCE, info->start, info->end, i, j);
 
 			MPI_Isend(info, 1, MPI_Info_type, status.MPI_SOURCE, 0, MPI_COMM_WORLD, &request);
 			message_count++;
@@ -328,23 +327,37 @@ unsigned char *masterCreateImage(struct State* state) {
 			j += 2;
 		}
 		else {
+			printf("[master] Sending initial termination message to %d, k=%d\n", status.MPI_SOURCE, k);
 			//Send termination message
-//			printf("[master] Sending termination message to %d, k=%d\n", status.MPI_SOURCE, k);
 			info->terminate = TRUE;
+			terminated[terminatedIndex] = status.MPI_SOURCE;
+			terminatedIndex++;
 			MPI_Isend(info, 1, MPI_Info_type, status.MPI_SOURCE, 0, MPI_COMM_WORLD, &request);
 		}
 
-		if (k >= _step + 1 
-			&& message_count == 0) break; //termination should occur
-
+		if (k >= _step+1 && message_count == 0) break; //termination should occur
 		k++;
 	}
 
-//	printf("[master] I'm free!!\n");
+	//send out termination messages just in case 
+	//info->terminate = TRUE;
+	//for(k=1; k<nproc; k++) {
+	//	int u, send = TRUE;
+	//	for (u=0; u<terminatedIndex+1; u++) {
+	//		if (k == terminated[u]) send = FALSE;
+	//	}
+	//	if (send) {
+	//		printf("[master] Sending termination message to %d\n", k);
+	//		MPI_Isend(info, 1, MPI_Info_type, k, 0, MPI_COMM_WORLD, &request);
+	//	}
+	//}
+
+	printf("[master] I'm free!!\n");
 
 	free(loc);
 	free(bins);
 	free(info);
+	free(terminated);
 
     return img;
 }
@@ -369,27 +382,18 @@ void draw(struct State* state) {
 
 int main(int argc, char *argv[]) {
 	setbuf(stdout, 0);
-    int iproc, nproc;
+    int iproc;
     MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD, &iproc);
-    MPI_Comm_size(MPI_COMM_WORLD, &nproc);
 
 	//Create custom MPI struct datatypes
 	createMPILocationType();
 	createMPIInfoType();
-    struct State* state = state_new();
 
-	double start_time = MPI_Wtime();
+    struct State* state = state_new();
 
 	if (iproc == 0) draw(state);
 	else worker(state);
-
-	double sum, end_time = MPI_Wtime() - start_time;
-	printf("[process %d] Time %f\n", iproc, MPI_Wtime() - start_time);
-
-	MPI_Reduce(&end_time, &sum, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-	if (iproc == 0)
-		printf("Average time %f\n", sum / nproc);
 
 	MPI_Type_free(&MPI_Location_type);
 	MPI_Type_free(&MPI_Info_type);
