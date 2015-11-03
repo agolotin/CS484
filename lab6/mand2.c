@@ -2,8 +2,6 @@
  *
  * File:            mandelbrot.cpp
  * Author:          Dany Shaanan
- * Website:         http://danyshaanan.com
- * File location:   https://github.com/danyshaanan/mandelbrot/blob/master/cpp/mandelbrot.cpp
  *
  * Created somewhen between 1999 and 2002
  * Rewritten August 2013

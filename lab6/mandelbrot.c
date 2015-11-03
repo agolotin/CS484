@@ -1,7 +1,6 @@
 /*
  * File:            mandelbrot_set.c
  * Author:          Artem Golotin
- * File location:   https://github.com/agolotin/CS484/blob/master/cpp/mandelbrot.cpp
  */
 
 #include <mpi.h>
