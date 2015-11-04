@@ -56,7 +56,7 @@ struct State* state_new() {
 
 	st->centerX = -1.186340599860225;
 	st->centerY = -0.303652988644423;
-	st->zoom = 1;
+	st->zoom = 10000;//1;
 	st->maxIterations = 100;
 	st->w = SIZE;
 	st->h = SIZE;
@@ -132,27 +132,16 @@ float iterationsToEscape(double x, double y, int maxIterations) {
     double tempa, i;
     double a = 0;
     double b = 0;
-	char abort = FALSE;
-	float output = FLT_MAX;
 
-//	#pragma omp parallel for private(i) schedule(dynamic)
     for (i = 0 ; i < maxIterations ; i++) {
-//		#pragma omp flush(abort)
-		if (!abort) {
-			tempa = a*a - b*b + x;
-			b = 2*a*b + y;
-			a = tempa;
-			if (a*a+b*b > 64) {
-				abort = TRUE;
-	//				#pragma omp flush(abort)
-				// return i; // discrete
-				output = i - log(sqrt(a*a+b*b))/log(8); //continuous
-
-			}
+		tempa = a*a - b*b + x;
+		b = 2*a*b + y;
+		a = tempa;
+		if (a*a+b*b > 64) {
+			// return i; // discrete
+			return i - log(sqrt(a*a+b*b))/log(8); //continuous
 		}
     }
-	if (output != FLT_MAX)
-		return output;
 
     return -1;
 }
@@ -235,6 +224,7 @@ void worker(struct State* state) {
 		}
 
     	unsigned char r, g, b;
+		#pragma omp parallel for schedule (dynamic) private (px, py)
 		for (px=start; px<end; px++) {
 			for (py=start; py<end; py++) {
 				r = g = b = 0;
